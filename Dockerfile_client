@@ -1,0 +1,14 @@
+FROM alpine
+
+RUN apk update \
+    && apk upgrade \
+    && apk add --no-cache \
+    ca-certificates \
+    && update-ca-certificates 2>/dev/null || true
+RUN mkdir -p /home/debian11/.ssh/
+RUN touch /home/debian11/.ssh/known_hosts
+RUN stat  /home/debian11/.ssh/known_hosts
+RUN ls /
+COPY main /main
+
+ENTRYPOINT [ "/main" ]

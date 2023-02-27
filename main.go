@@ -10,42 +10,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func main() {
-	// hostKeyCallback, err := knownhosts.New("/home/yakul/.ssh/known_hosts")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// 	panic(err)
-	// }
-
-	config := &ssh.ClientConfig{
-		User: "root",
-		Auth: []ssh.AuthMethod{
-			ssh.Password("mypassword"),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	stringFlag := flag.String("containerid", "", "container id which will run the commands")
-	flag.Parse()
-
-	// ssh into a remote server for now
-	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", *stringFlag), config)
-	if err != nil {
-
-		log.Fatal(err)
-		panic(err)
-	}
-
-	defer conn.Close()
-
-	s, err := conn.NewSession()
-	if err != nil {
-		log.Fatal(err)
-		panic(err)
-	}
-
-	defer s.Close()
-
+func setupPipes(s *ssh.Session, wrc chan []byte, done chan int) {
 	//-------
 	//
 	//-------
@@ -65,10 +30,6 @@ func main() {
 		log.Fatal(err)
 		panic(err)
 	}
-
-	wrc := make(chan []byte)
-
-	done := make(chan int, 1)
 
 	// write to stdin of the shell
 	go func() {
@@ -129,6 +90,48 @@ func main() {
 		}
 
 	}()
+}
+
+func main() {
+	// hostKeyCallback, err := knownhosts.New("/home/yakul/.ssh/known_hosts")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// 	panic(err)
+	// }
+
+	config := &ssh.ClientConfig{
+		User: "root",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("mypassword"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+
+	stringFlag := flag.String("containerid", "", "container id which will run the commands")
+	flag.Parse()
+
+	// ssh into a remote server for now
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", *stringFlag), config)
+	if err != nil {
+
+		log.Fatal(err)
+		panic(err)
+	}
+
+	defer conn.Close()
+
+	s, err := conn.NewSession()
+	if err != nil {
+		log.Fatal(err)
+		panic(err)
+	}
+
+	defer s.Close()
+
+	wrc := make(chan []byte)
+	done := make(chan int, 1)
+
+	setupPipes(s, wrc, done)
 
 	err = s.Start("/bin/bash")
 	if err != nil {
